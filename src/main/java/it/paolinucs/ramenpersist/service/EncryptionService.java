@@ -21,7 +21,7 @@ public class EncryptionService {
     public String encrypt(String plainText, String master) throws NoSuchAlgorithmException, NoSuchPaddingException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         if (plainText == null || plainText.isEmpty()) {
-            throw new IllegalArgumentException("Il testo da crittografare non può essere vuoto o nullo.");
+            throw new IllegalArgumentException("Plain text cannot be null!");
         }
 
         SecretKeySpec secretKeySpec = new SecretKeySpec(Arrays.copyOf(master.getBytes(), 32), ALGORITHM);
@@ -35,7 +35,7 @@ public class EncryptionService {
     public String decrypt(String encryptedText, String master) throws NoSuchAlgorithmException, NoSuchPaddingException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         if (encryptedText == null || encryptedText.isEmpty()) {
-            throw new IllegalArgumentException("Il testo crittografato non può essere vuoto o nullo.");
+            throw new IllegalArgumentException("Plain text cannot be null!");
         }
 
         SecretKeySpec secretKeySpec = new SecretKeySpec(Arrays.copyOf(master.getBytes(), 32), ALGORITHM);

@@ -1,5 +1,6 @@
 package it.paolinucs.ramenpersist.config;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -8,6 +9,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
@@ -15,7 +17,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import it.paolinucs.ramenpersist.service.JsonService;
+import it.paolinucs.ramenpersist.service.PersistenceService;
+import it.paolinucs.ramenpersist.service.MasterService;
 
 @Component
 public class CommandLineOptions {
@@ -23,29 +26,34 @@ public class CommandLineOptions {
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    private JsonService jsonService;
+    private PersistenceService jsonService;
+
+    @Autowired
+    private MasterService masterService;
 
     private final Map<String, Consumer<CommandLine>> optionActions = new HashMap<>();
+
+
+    //TODO: fix multiple arguments command.
 
     public CommandLineOptions() {
         optionActions.put("h", this::printHelp);
         optionActions.put("u", this::uploadData);
         optionActions.put("m", this::setMasterPassword);
+        optionActions.put("d", this::retrieveAllPayloads);
     }
 
-
-    //TODO: commentare per bene questo metodo, contiene cose importanti
     public void handleOptions(String[] args) throws ParseException {
         Options options = createOptions();
         CommandLineParser parser = new DefaultParser();
 
         try {
             CommandLine cmd = parser.parse(options, args);
-            String[] cmdArgs = cmd.getArgs();
+            Option[] cmdOptions = cmd.getOptions();
 
-            if (cmdArgs.length > 0) {
-                String option = cmdArgs[0];
-                optionActions.getOrDefault(option, this::handleUnknownOption).accept(cmd);
+            if (cmdOptions.length > 0) {
+                Option option = cmdOptions[0]; // Prendi la prima opzione
+                optionActions.getOrDefault(option.getOpt(), this::handleUnknownOption).accept(cmd);
             } else {
                 LOG.warn("No option provided");
                 System.exit(1);
@@ -84,13 +92,29 @@ public class CommandLineOptions {
     private void setMasterPassword(CommandLine cmd) {
         LOG.info("Set new master-password");
         String newPassword = cmd.getOptionValue("m");
-        System.out.println(newPassword);
+        LOG.info("New Password: {}", newPassword);
+        try {
+            masterService.setMasterPassword(newPassword);
+            masterService.resetData();
+        } catch (IOException exc) {
+            LOG.error("Cannot set new master password!");
+            System.exit(1);
+        }
         System.exit(0);
     }
 
     private void handleUnknownOption(CommandLine cmd) {
         System.out.println("Unknown option.");
         System.exit(1);
+    }
+
+    public void retrieveAllPayloads(CommandLine cmd) {
+        try {
+            System.out.println(jsonService.importAll());
+            System.exit(0);
+        } catch (IOException exc) {
+            System.exit(1);
+        }
     }
 
 }

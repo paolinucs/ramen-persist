@@ -1,9 +1,15 @@
 package it.paolinucs.ramenpersist.service;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -22,12 +28,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 @Service
-public class JsonService {
+public class PersistenceService {
 
     private Logger LOG = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private EncryptionService encryptionService;
+
+    // ---------------------------------------SAVE---------------------------------------------//
 
     private JsonObject parseFromString(String jsonString) {
         Gson gson = new Gson();
@@ -146,6 +154,33 @@ public class JsonService {
 
         LOG.info("JSON integrity check completed succesfully.");
         return true;
+    }
+
+    // ---------------------------------------RETRIEVE---------------------------------------------//
+
+    public List<JsonObject> importAll() throws IOException {
+        List<JsonObject> payloads = new ArrayList<>();
+        File dir = new File("data");
+
+        if (dir.exists() && dir.isDirectory()) {
+            File[] dirFiles = dir.listFiles();
+            LOG.info("Payload files list: {}", dirFiles.toString());
+
+            if (dirFiles != null) {
+                for (File f : dirFiles) {
+                    if (f.isFile()) {
+                        Reader r = Files.newBufferedReader(Paths.get(f.getPath()));
+                        JsonObject js = new Gson().fromJson(r, JsonObject.class);
+                        js.add("uuid", new Gson().fromJson(f.getName().toString().split(".json")[0],
+                                JsonElement.class));
+                        LOG.info(js.toString());
+                        payloads.add(js);
+                    }
+                }
+            }
+        }
+
+        return !payloads.isEmpty() ? payloads : null;
     }
 
 }

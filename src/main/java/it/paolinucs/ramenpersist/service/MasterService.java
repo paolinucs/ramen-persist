@@ -1,11 +1,13 @@
 package it.paolinucs.ramenpersist.service;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import org.apache.commons.io.FileUtils;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -20,9 +22,9 @@ import org.springframework.stereotype.Service;
 public class MasterService {
 
   @Autowired
-  private static EncryptionService encryptionService;
+  private EncryptionService encryptionService;
 
-  private static Logger LOG = LoggerFactory.getLogger("MasterPasswordService");
+  private Logger LOG = LoggerFactory.getLogger(getClass());
 
   public void setMasterPassword(String masterPassword) throws IOException {
     FileWriter file = new FileWriter("auth");
@@ -55,4 +57,16 @@ public class MasterService {
     fileReader.close();
     return encryptionService.decrypt(fileContent, masterPassword).equals(masterPassword);
   }
+
+  /*
+   * use-cases: I have changed my master password / I want to clean requests
+   * history
+   */
+
+  public void resetData() throws IOException {
+    File dir = new File("data");
+    FileUtils.cleanDirectory(dir);
+    LOG.info("Request data cleaned succesfully");
+  }
+
 }
